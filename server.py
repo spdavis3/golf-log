@@ -1180,17 +1180,7 @@ function render(matches) {
   </div>
 
   <div class="card">
-    <h2>Head to Head (individual match wins)</h2>
-    <div class="stats">
-      <div class="stat"><div class="num pd">${dW}</div><div class="lbl">D Wins</div></div>
-      <div class="stat"><div class="num" style="color:#9ca3af">${ties}</div><div class="lbl">Ties</div></div>
-      <div class="stat"><div class="num pv">${vW}</div><div class="lbl">V Wins</div></div>
-      <div class="stat"><div class="num" style="color:#60a5fa;font-size:28px">${(dW/matches.length*100).toFixed(0)}%</div><div class="lbl">D Win %</div></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>Running Standing + 5-Match Average &nbsp;<span style="font-size:11px;font-weight:400;color:#9ca3af">(+ D leading / − V leading)</span></h2>
+    <h2>Standing Over Time &nbsp;<span style="font-size:11px;font-weight:400;color:#9ca3af">(+ D leading / − V leading)</span></h2>
     <canvas id="chart"></canvas>
   </div>
 
@@ -1202,34 +1192,31 @@ function render(matches) {
     </table>
   </div>`;
 
-  // Fill area above/below zero with appropriate color
+  const barColors = standings.map(v =>
+    v > 0 ? 'rgba(96,165,250,.7)' : v < 0 ? 'rgba(34,197,94,.7)' : 'rgba(156,163,175,.5)'
+  );
+
   new Chart(document.getElementById('chart'), {
-    type: 'line',
+    type: 'bar',
     data: {
       labels: chartLabels,
       datasets: [
         {
           label: 'Standing',
           data: standings,
-          borderColor: '#f59e0b',
-          backgroundColor: ctx => {
-            const v = ctx.chart.data.datasets[0].data[ctx.dataIndex];
-            return v >= 0 ? 'rgba(96,165,250,.15)' : 'rgba(34,197,94,.15)';
-          },
-          borderWidth: 2,
-          pointRadius: 0,
-          pointHitRadius: 8,
-          tension: 0.2,
-          fill: {target: 'origin'},
+          backgroundColor: barColors,
+          borderColor: barColors.map(c => c.replace('.7','.9').replace('.5','.8')),
+          borderWidth: 1,
           order: 2,
         },
         {
           label: '5-SMA',
           data: sma5,
-          borderColor: '#e879f9',
+          type: 'line',
+          borderColor: '#f59e0b',
           backgroundColor: 'transparent',
-          borderWidth: 2,
-          borderDash: [5,3],
+          borderWidth: 2.5,
+          borderDash: [5, 3],
           pointRadius: 0,
           tension: 0.4,
           spanGaps: false,
