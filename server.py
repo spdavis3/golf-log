@@ -26,7 +26,7 @@ def save_match(match_data):
 # Service Worker
 # ---------------------------------------------------------------------------
 SW_JS = """
-const CACHE = 'vd-golf-v3';
+const CACHE = 'vd-golf-v4';
 const CORE = ['/'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)));
@@ -163,6 +163,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 <div id="screen-setup" class="screen">
   <div class="topbar">
     <div><div style="font-size:20px;font-weight:900">⛳ VD Golf</div><div class="sub" id="setup-date"></div></div>
+  </div>
+
+  <!-- Current match status card (shown when match is in progress) -->
+  <div id="match-status-card" style="display:none;margin:12px 16px;background:#1f2937;border:2px solid #f59e0b;border-radius:14px;padding:16px">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#f59e0b;margin-bottom:10px">Match in Progress</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div id="ms-lead" style="font-size:22px;font-weight:900"></div>
+      <div id="ms-holes" style="font-size:13px;color:#9ca3af;text-align:right"></div>
+    </div>
+    <div style="display:flex;justify-content:space-around;margin-bottom:14px">
+      <div style="text-align:center">
+        <div style="font-size:28px;font-weight:900;color:#22c55e" id="ms-v-pts">0</div>
+        <div style="font-size:11px;color:#9ca3af">V pts</div>
+        <div style="font-size:12px;font-weight:600;color:#9ca3af;margin-top:2px" id="ms-v-nine"></div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:28px;font-weight:900;color:#60a5fa" id="ms-d-pts">0</div>
+        <div style="font-size:11px;color:#9ca3af">D pts</div>
+        <div style="font-size:12px;font-weight:600;color:#9ca3af;margin-top:2px" id="ms-d-nine"></div>
+      </div>
+    </div>
+    <button class="btn btn-green" onclick="resumeMatch()" style="margin:0 0 8px">Resume Match</button>
+    <button class="btn btn-ghost" onclick="abandonMatch()" style="margin:0;font-size:14px;padding:10px">Abandon &amp; Start New</button>
   </div>
   <div class="card">
     <h3>Select Nines (in play order)</h3>
@@ -443,6 +466,29 @@ function calcHole(hole, vGross, dGross, vStroke, dStroke) {
 // ═══════════════════════════════════════════
 function initSetup() {
   document.getElementById('setup-date').textContent = today();
+
+  // Show/update match status card
+  const card = document.getElementById('match-status-card');
+  if (S.inProgress && S.holes.length > 0 && S.results.length > 0) {
+    card.style.display = 'block';
+    const ms = matchScore();
+    const m = ms.v - ms.d;
+    const leadEl = document.getElementById('ms-lead');
+    if (m === 0) { leadEl.textContent = 'Even'; leadEl.style.color = '#9ca3af'; }
+    else { const who=m>0?'V':'D', color=m>0?'#22c55e':'#60a5fa'; leadEl.textContent=`${who} leads +${Math.abs(m)}`; leadEl.style.color=color; }
+    document.getElementById('ms-v-pts').textContent = ms.v;
+    document.getElementById('ms-d-pts').textContent = ms.d;
+    const nines = S.selectedNines.map(i => COURSE.nines[i].name).join(' + ');
+    const holesLeft = S.holes.length - S.results.length;
+    document.getElementById('ms-holes').innerHTML = `${nines}<br>${S.results.length} of ${S.holes.length} holes played`;
+    // Running nine score
+    const nine = getCurrentNineScore();
+    document.getElementById('ms-v-nine').textContent = nine.count > 0 ? `Nine: ${fmtVsPar(nine.vVsPar)}` : '';
+    document.getElementById('ms-d-nine').textContent = nine.count > 0 ? `Nine: ${fmtVsPar(nine.dVsPar)}` : '';
+  } else {
+    card.style.display = 'none';
+  }
+
   const el = document.getElementById('nine-opts');
   el.innerHTML = '';
   COURSE.nines.forEach((nine, idx) => {
@@ -868,6 +914,19 @@ async function saveMatch() {
   } catch { showToast('No connection — save when online'); }
 }
 
+function resumeMatch() {
+  const idx = S.results.length;
+  if (idx < S.holes.length) { showScreen('screen-hole'); showHole(idx); }
+  else showSummary();
+}
+
+function abandonMatch() {
+  if (!confirm('Abandon current match and start a new one?')) return;
+  S = freshState();
+  saveState();
+  initSetup();
+}
+
 function newMatch() {
   S = freshState();
   saveState();
@@ -936,15 +995,10 @@ function loadState() { try { const s=localStorage.getItem('vd-golf'); return s?J
 // ═══════════════════════════════════════════
 // BOOT
 // ═══════════════════════════════════════════
-if (S.inProgress && S.holes.length > 0) {
-  const idx = S.results.length;
-  if (idx < S.holes.length) { showScreen('screen-hole'); showHole(idx); }
-  else showSummary();
-} else {
-  S = freshState();
-  showScreen('screen-setup');
-  initSetup();
-}
+// Always land on setup screen — match status card shows if a match is in progress
+if (!S.inProgress) S = freshState();
+showScreen('screen-setup');
+initSetup();
 
 if ('serviceWorker' in navigator) {
   // Unregister old SW versions, then register fresh
