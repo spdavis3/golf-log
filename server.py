@@ -26,7 +26,7 @@ def save_match(match_data):
 # Service Worker
 # ---------------------------------------------------------------------------
 SW_JS = """
-const CACHE = 'vd-golf-v7';
+const CACHE = 'vd-golf-v8';
 const CORE = ['/'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)));
@@ -59,6 +59,7 @@ PWA_HTML = r"""<!DOCTYPE html>
 <meta name="apple-mobile-web-app-title" content="VD Golf">
 <title>VD Golf Match</title>
 <meta name="apple-mobile-web-app-title" content="VD Golf Match">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -991,28 +992,88 @@ async function showHistory() {
   }
 }
 
+function sma5arr(arr) {
+  return arr.map((_,i) => {
+    if (i < 4) return null;
+    let s=0; for(let j=i-4;j<=i;j++) s+=arr[j]; return s/5;
+  });
+}
+
 function renderHistory(matches) {
   const body = document.getElementById('history-body');
   if (!matches.length) { body.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px">No matches yet</div>'; return; }
 
-  let vW=0,dW=0,ties=0;
-  matches.forEach(m => { if(m.winner==='V')vW++; else if(m.winner==='D')dW++; else ties++; });
-
-  let html = `<div class="card"><h3>Head to Head</h3>
-    <div style="display:flex;justify-content:space-around;text-align:center;padding:8px 0">
-      <div><div style="font-size:32px;font-weight:900;color:var(--green)">${vW}</div><div style="color:var(--muted);font-size:13px">V Wins</div></div>
-      <div><div style="font-size:32px;font-weight:900;color:var(--muted)">${ties}</div><div style="color:var(--muted);font-size:13px">Ties</div></div>
-      <div><div style="font-size:32px;font-weight:900;color:var(--blue)">${dW}</div><div style="color:var(--muted);font-size:13px">D Wins</div></div>
-    </div></div>
-  <div class="card" style="overflow-x:auto"><h3>Matches</h3>
-  <table class="htbl"><tr><th>Date</th><th>Nines</th><th style="color:var(--green)">V</th><th style="color:var(--blue)">D</th><th>Result</th></tr>`;
-
-  [...matches].reverse().forEach(m => {
-    const res = m.winner==='V'?`<span class="pv">V +${m.margin}</span>`:m.winner==='D'?`<span class="pd">D +${Math.abs(m.margin)}</span>`:'Tie';
-    html += `<tr><td>${m.date}</td><td style="font-size:11px">${(m.nines||[]).join(', ')}</td><td>${m.v_points}</td><td>${m.d_points}</td><td>${res}</td></tr>`;
+  // Running standing: historical matches store cumulative total; played matches store individual margin
+  let runningTotal = 0;
+  const standings = matches.map(m => {
+    if (m.historical) {
+      runningTotal = m.winner==='D' ? m.margin : m.winner==='V' ? -m.margin : 0;
+    } else {
+      runningTotal += m.winner==='D' ? m.margin : m.winner==='V' ? -m.margin : 0;
+    }
+    return runningTotal;
   });
-  html += '</table></div>';
-  body.innerHTML = html;
+
+  const sma = sma5arr(standings);
+  const cur = standings[standings.length-1];
+  const curStr = cur>0 ? `D +${cur}` : cur<0 ? `V +${Math.abs(cur)}` : 'Even';
+  const curColor = cur>0 ? 'var(--blue)' : cur<0 ? 'var(--green)' : 'var(--muted)';
+
+  const chartLabels = matches.map((m,i) => m.date.startsWith('pre-2025') ? '#'+(i+1) : m.date.slice(5)); // MM-DD for dated
+
+  let rows = '';
+  [...matches].reverse().forEach((m, ri) => {
+    const i = matches.length - 1 - ri;
+    const st = standings[i];
+    const stStr = st>0 ? `<span class="pd">D +${st}</span>` : st<0 ? `<span class="pv">V +${Math.abs(st)}</span>` : '<span style="color:var(--muted)">Even</span>';
+    const hist = m.historical ? ' <span style="font-size:10px;color:var(--muted)">(h)</span>' : '';
+    rows += `<tr><td>${m.date}${hist}</td><td>${stStr}</td><td>${m.honor_next?`<span class="${m.honor_next==='V'?'pv':'pd'}">${m.honor_next}</span>`:'—'}</td></tr>`;
+  });
+
+  body.innerHTML = `
+    <div style="text-align:center;padding:16px 0 8px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px">Current Standing</div>
+      <div style="font-size:48px;font-weight:900;color:${curColor}">${curStr}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">${matches.length} matches</div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:10px">Standing Over Time</h3>
+      <canvas id="hist-chart" style="height:220px;display:block"></canvas>
+    </div>
+    <div class="card" style="overflow-x:auto">
+      <h3 style="margin-bottom:10px">Match Log</h3>
+      <table class="htbl">
+        <tr><th>Date</th><th>Standing</th><th>Next Honor</th></tr>
+        ${rows}
+      </table>
+    </div>`;
+
+  const barColors = standings.map(v => v>0 ? 'rgba(96,165,250,.7)' : v<0 ? 'rgba(34,197,94,.7)' : 'rgba(156,163,175,.5)');
+  new Chart(document.getElementById('hist-chart'), {
+    type: 'bar',
+    data: {
+      labels: chartLabels,
+      datasets: [
+        { label:'Standing', data:standings, backgroundColor:barColors, borderWidth:0, order:2 },
+        { label:'5-SMA', data:sma, type:'line', borderColor:'#f59e0b', backgroundColor:'transparent',
+          borderWidth:2, borderDash:[4,3], pointRadius:0, tension:0.4, spanGaps:false, order:1 }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{labels:{color:'#9ca3af',boxWidth:12}}, tooltip:{callbacks:{
+        label: ctx => {
+          const v=ctx.raw;
+          if(ctx.datasetIndex===0) return v>0?`D leads ${v}`:v<0?`V leads ${Math.abs(v)}`:'Even';
+          return v!=null?`SMA: ${v>0?'+':''}${v.toFixed(1)}`:'';
+        }
+      }}},
+      scales:{
+        x:{ticks:{color:'#9ca3af',maxTicksLimit:8,maxRotation:45},grid:{color:'#1e2a3a'}},
+        y:{ticks:{color:'#9ca3af'},grid:{color:'#1e2a3a'}}
+      }
+    }
+  });
 }
 
 // ═══════════════════════════════════════════
