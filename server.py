@@ -26,7 +26,7 @@ def save_match(match_data):
 # Service Worker
 # ---------------------------------------------------------------------------
 SW_JS = """
-const CACHE = 'vd-golf-v5';
+const CACHE = 'vd-golf-v6';
 const CORE = ['/'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)));
@@ -58,6 +58,7 @@ PWA_HTML = r"""<!DOCTYPE html>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="VD Golf">
 <title>VD Golf Match</title>
+<meta name="apple-mobile-web-app-title" content="VD Golf Match">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -162,7 +163,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 <!-- ═══════════════ SETUP SCREEN ═══════════════ -->
 <div id="screen-setup" class="screen">
   <div class="topbar">
-    <div><div style="font-size:20px;font-weight:900">⛳ VD Golf</div><div class="sub" id="setup-date"></div></div>
+    <div><div style="font-size:20px;font-weight:900">⛳ VD Golf Match</div><div class="sub" id="setup-date"></div></div>
   </div>
 
   <!-- Current match status card (shown when match is in progress) -->
