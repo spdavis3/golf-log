@@ -59,6 +59,7 @@ PWA_HTML = r"""<!DOCTYPE html>
 <meta name="apple-mobile-web-app-title" content="VD Golf">
 <title>VD Golf Match</title>
 <meta name="apple-mobile-web-app-title" content="VD Golf Match">
+<link rel="apple-touch-icon" href="/icon.png">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -1324,6 +1325,13 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, 'text/html', PWA_HTML)
         elif self.path == '/sw.js':
             self._send(200, 'application/javascript', SW_JS)
+        elif self.path == '/icon.png':
+            icon_path = os.path.join(os.path.dirname(__file__), 'icon.png')
+            if os.path.exists(icon_path):
+                with open(icon_path, 'rb') as f:
+                    self._send(200, 'image/png', f.read())
+            else:
+                self._send(404, 'text/plain', 'Not found')
         elif self.path == '/history':
             self._send(200, 'text/html', HISTORY_HTML)
         elif self.path == '/api/matches':
