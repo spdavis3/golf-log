@@ -1085,7 +1085,7 @@ tr:hover td{background:#161f2e}
 .pv{color:#22c55e;font-weight:700} .pd{color:#60a5fa;font-weight:700}
 .gold{color:#f59e0b;font-weight:700}
 .dim{color:#9ca3af}
-canvas{max-height:260px}
+canvas{display:block}
 .badge-hist{font-size:10px;color:#9ca3af;background:#1e2a3a;border-radius:4px;padding:1px 5px;vertical-align:middle;margin-left:4px}
 </style>
 </head>
@@ -1181,7 +1181,7 @@ function render(matches) {
 
   <div class="card">
     <h2>Standing Over Time &nbsp;<span style="font-size:11px;font-weight:400;color:#9ca3af">(+ D leading / − V leading)</span></h2>
-    <canvas id="chart"></canvas>
+    <canvas id="chart" style="height:280px"></canvas>
   </div>
 
   <div class="card" style="overflow-x:auto">
@@ -1226,6 +1226,7 @@ function render(matches) {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         legend: { labels: { color: '#9ca3af', boxWidth: 14 } },
         tooltip: {
