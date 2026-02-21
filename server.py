@@ -26,7 +26,7 @@ def save_match(match_data):
 # Service Worker
 # ---------------------------------------------------------------------------
 SW_JS = """
-const CACHE = 'vd-golf-v6';
+const CACHE = 'vd-golf-v7';
 const CORE = ['/'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)));
@@ -565,8 +565,10 @@ function showHole(idx) {
   const hole = S.holes[idx];
   if (!hole) { showSummary(); return; }
 
-  // Compute strokes if entering a new nine
-  if (isNineStart(idx)) computeStrokesForNine(idx);
+  // Compute strokes at nine transitions, and at hole 0 if carry-in is large enough
+  if (isNineStart(idx) || (idx === 0 && Math.abs(S.startOffset || 0) >= 5)) {
+    computeStrokesForNine(idx);
+  }
 
   const strokes = S.strokeMap[idx] || {v:false, d:false};
 
