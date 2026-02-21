@@ -1114,37 +1114,49 @@ function render(matches) {
     return;
   }
 
-  let vW=0, dW=0, ties=0;
-  matches.forEach(m=>{
-    if(m.winner==='V') vW++; else if(m.winner==='D') dW++; else ties++;
+  // Compute running standing at each match entry.
+  // Historical matches store the running total in margin (positive=D up, negative=V up).
+  // Played matches store the individual match margin; add to running total.
+  let runningTotal = 0;
+  const standings = matches.map(m => {
+    if (m.historical) {
+      runningTotal = m.winner==='D' ? m.margin : m.winner==='V' ? -m.margin : 0;
+    } else {
+      runningTotal += m.winner==='D' ? m.margin : m.winner==='V' ? -m.margin : 0;
+    }
+    return runningTotal;
   });
-  const avgMargin = matches.reduce((s,m)=>s+Math.abs(m.margin),0)/matches.length;
 
-  // Chart data — signed margin: positive = D winning, negative = V winning
-  // margin stored as abs value; use winner to determine sign
-  const signedMargins = matches.map(m =>
-    m.winner==='D' ? m.margin : m.winner==='V' ? -m.margin : 0
-  );
-  const sma5 = signedMargins.map((_,i) => sma(signedMargins,5,i));
+  // Compute individual match deltas for win/loss counts
+  let vW=0, dW=0, ties=0;
+  for (let i=0; i<standings.length; i++) {
+    const prev = i===0 ? 0 : standings[i-1];
+    const delta = standings[i] - prev;
+    if (delta > 0) dW++; else if (delta < 0) vW++; else ties++;
+  }
+
+  const sma5 = standings.map((_,i) => sma(standings,5,i));
   const chartLabels = matches.map((m,i) => m.date.startsWith('pre-2025') ? '#'+(i+1) : m.date);
 
-  // Bar colors: blue for D win (positive), green for V win (negative), gray for tie
-  const barColors = matches.map(m =>
-    m.winner==='D' ? 'rgba(96,165,250,.6)' : m.winner==='V' ? 'rgba(34,197,94,.6)' : 'rgba(156,163,175,.4)'
-  );
+  // Current standing (last entry)
+  const cur = standings[standings.length-1];
+  const curStr = cur>0 ? `D +${cur}` : cur<0 ? `V +${Math.abs(cur)}` : 'Even';
+  const curColor = cur>0 ? '#60a5fa' : cur<0 ? '#22c55e' : '#9ca3af';
 
   // Match log rows (most recent first)
   const rows = [...matches].reverse().map((m, ri) => {
-    const i = matches.length - 1 - ri; // chronological index
+    const i = matches.length - 1 - ri;
+    const standing = standings[i];
     const s5 = sma5[i];
-    const res = m.winner==='D'
-      ? `<span class="pd">D +${m.margin}</span>`
-      : m.winner==='V'
-      ? `<span class="pv">V +${m.margin}</span>`
-      : '<span class="dim">Tie</span>';
+    const standStr = standing>0
+      ? `<span class="pd">D +${standing}</span>`
+      : standing<0
+      ? `<span class="pv">V +${Math.abs(standing)}</span>`
+      : '<span class="dim">Even</span>';
     const honor = m.honor_next ? `<span class="${m.honor_next==='V'?'pv':'pd'}">${m.honor_next}</span>` : '<span class="dim">—</span>';
-    // positive SMA = D doing well (blue), negative = V doing well (green)
-    const smaStr = s5 !== null ? `<span style="color:${s5>0?'#60a5fa':s5<0?'#22c55e':'#9ca3af'}">${s5>0?'+':''}${s5.toFixed(1)}</span>` : '<span class="dim">—</span>';
+    const smaStr = s5 !== null
+      ? `<span style="color:${s5>0?'#60a5fa':s5<0?'#22c55e':'#9ca3af'}">${s5>0?'+':''}${s5.toFixed(1)}</span>`
+      : '<span class="dim">—</span>';
     const hist = m.historical ? '<span class="badge-hist">hist</span>' : '';
     const ninesStr = m.historical ? '<span class="dim">—</span>' : (m.nines||[]).join(', ') || '<span class="dim">—</span>';
     const ptsStr = m.historical
@@ -1154,57 +1166,70 @@ function render(matches) {
       <td class="dim">${m.date}${hist}</td>
       <td>${ninesStr}</td>
       <td>${ptsStr}</td>
-      <td>${res}</td>
+      <td>${standStr}</td>
       <td>${smaStr}</td>
       <td>${honor}</td>
     </tr>`;
   }).join('');
 
   document.getElementById('content').innerHTML = `
+  <div class="card" style="text-align:center;padding:24px 20px">
+    <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#9ca3af;margin-bottom:8px">Current Standing</div>
+    <div style="font-size:56px;font-weight:900;color:${curColor}">${curStr}</div>
+    <div style="font-size:13px;color:#9ca3af;margin-top:8px">${matches.length} matches played</div>
+  </div>
+
   <div class="card">
-    <h2>Head to Head — ${matches.length} Matches</h2>
+    <h2>Head to Head (individual match wins)</h2>
     <div class="stats">
       <div class="stat"><div class="num pd">${dW}</div><div class="lbl">D Wins</div></div>
       <div class="stat"><div class="num" style="color:#9ca3af">${ties}</div><div class="lbl">Ties</div></div>
       <div class="stat"><div class="num pv">${vW}</div><div class="lbl">V Wins</div></div>
       <div class="stat"><div class="num" style="color:#60a5fa;font-size:28px">${(dW/matches.length*100).toFixed(0)}%</div><div class="lbl">D Win %</div></div>
-      <div class="stat"><div class="num" style="font-size:28px;color:#9ca3af">${avgMargin.toFixed(1)}</div><div class="lbl">Avg Margin</div></div>
     </div>
   </div>
 
   <div class="card">
-    <h2>Match Margin + 5-Match Average &nbsp;<span style="font-size:11px;font-weight:400;color:#9ca3af">(+ D winning / − V winning)</span></h2>
+    <h2>Running Standing + 5-Match Average &nbsp;<span style="font-size:11px;font-weight:400;color:#9ca3af">(+ D leading / − V leading)</span></h2>
     <canvas id="chart"></canvas>
   </div>
 
   <div class="card" style="overflow-x:auto">
     <h2>Match Log</h2>
     <table>
-      <tr><th>Date</th><th>Nines</th><th>V / D Pts</th><th>Result</th><th>5-SMA</th><th>Next Honor</th></tr>
+      <tr><th>Date</th><th>Nines</th><th>V / D Pts</th><th>Standing</th><th>5-SMA</th><th>Next Honor</th></tr>
       ${rows}
     </table>
   </div>`;
 
+  // Fill area above/below zero with appropriate color
   new Chart(document.getElementById('chart'), {
-    type: 'bar',
+    type: 'line',
     data: {
       labels: chartLabels,
       datasets: [
         {
-          label: 'Margin',
-          data: signedMargins,
-          backgroundColor: barColors,
-          borderColor: barColors.map(c=>c.replace('.6','1').replace('.4','1')),
-          borderWidth: 1,
+          label: 'Standing',
+          data: standings,
+          borderColor: '#f59e0b',
+          backgroundColor: ctx => {
+            const v = ctx.chart.data.datasets[0].data[ctx.dataIndex];
+            return v >= 0 ? 'rgba(96,165,250,.15)' : 'rgba(34,197,94,.15)';
+          },
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHitRadius: 8,
+          tension: 0.2,
+          fill: {target: 'origin'},
           order: 2,
         },
         {
           label: '5-SMA',
           data: sma5,
-          type: 'line',
-          borderColor: '#f59e0b',
+          borderColor: '#e879f9',
           backgroundColor: 'transparent',
-          borderWidth: 2.5,
+          borderWidth: 2,
+          borderDash: [5,3],
           pointRadius: 0,
           tension: 0.4,
           spanGaps: false,
@@ -1219,11 +1244,11 @@ function render(matches) {
         tooltip: {
           callbacks: {
             label: ctx => {
-              if (ctx.datasetIndex===0) {
-                const v = ctx.raw;
-                return v>0 ? `D won by ${v}` : v<0 ? `V won by ${Math.abs(v)}` : 'Tie';
+              const v = ctx.raw;
+              if (ctx.datasetIndex === 0) {
+                return v > 0 ? `D leads by ${v}` : v < 0 ? `V leads by ${Math.abs(v)}` : 'Even';
               }
-              return `5-SMA: ${ctx.raw !== null ? ctx.raw.toFixed(1) : 'n/a'}`;
+              return v !== null ? `5-SMA: ${v > 0 ? '+' : ''}${v.toFixed(1)}` : '';
             }
           }
         }
@@ -1231,7 +1256,7 @@ function render(matches) {
       scales: {
         x: { ticks: { color: '#9ca3af', maxTicksLimit: 12, maxRotation: 45 }, grid: { color: '#1e2a3a' } },
         y: { ticks: { color: '#9ca3af' }, grid: { color: '#1e2a3a' },
-             title: { display: true, text: '← V winning   |   D winning →', color: '#9ca3af', font: { size: 11 } } }
+             title: { display: true, text: '← V leading   |   D leading →', color: '#9ca3af', font: { size: 11 } } }
       }
     }
   });
