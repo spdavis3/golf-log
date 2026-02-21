@@ -920,7 +920,7 @@ async function saveMatch() {
     holes_played: S.holes.length,
     v_points: ms.v,
     d_points: ms.d,
-    margin: m,
+    margin: Math.abs(m),
     winner: m>0?'V':m<0?'D':'Tie',
     hole_results: S.results,
   };
@@ -1120,27 +1120,31 @@ function render(matches) {
   });
   const avgMargin = matches.reduce((s,m)=>s+Math.abs(m.margin),0)/matches.length;
 
-  // Chart data — margin per match + 5-SMA (positive = V won, negative = D won)
-  const margins = matches.map(m => m.margin);
-  const sma5 = margins.map((_,i) => sma(margins,5,i));
+  // Chart data — signed margin: positive = D winning, negative = V winning
+  // margin stored as abs value; use winner to determine sign
+  const signedMargins = matches.map(m =>
+    m.winner==='D' ? m.margin : m.winner==='V' ? -m.margin : 0
+  );
+  const sma5 = signedMargins.map((_,i) => sma(signedMargins,5,i));
   const chartLabels = matches.map((m,i) => m.date.startsWith('pre-2025') ? '#'+(i+1) : m.date);
 
-  // Bar colors: green for V win, blue for D win, gray for tie
+  // Bar colors: blue for D win (positive), green for V win (negative), gray for tie
   const barColors = matches.map(m =>
-    m.winner==='V' ? 'rgba(34,197,94,.55)' : m.winner==='D' ? 'rgba(96,165,250,.55)' : 'rgba(156,163,175,.4)'
+    m.winner==='D' ? 'rgba(96,165,250,.6)' : m.winner==='V' ? 'rgba(34,197,94,.6)' : 'rgba(156,163,175,.4)'
   );
 
-  // Match log rows (most recent first, with running SMA index)
+  // Match log rows (most recent first)
   const rows = [...matches].reverse().map((m, ri) => {
     const i = matches.length - 1 - ri; // chronological index
     const s5 = sma5[i];
-    const res = m.winner==='V'
+    const res = m.winner==='D'
+      ? `<span class="pd">D +${m.margin}</span>`
+      : m.winner==='V'
       ? `<span class="pv">V +${m.margin}</span>`
-      : m.winner==='D'
-      ? `<span class="pd">D +${Math.abs(m.margin)}</span>`
       : '<span class="dim">Tie</span>';
     const honor = m.honor_next ? `<span class="${m.honor_next==='V'?'pv':'pd'}">${m.honor_next}</span>` : '<span class="dim">—</span>';
-    const smaStr = s5 !== null ? `<span style="color:${s5>0?'#22c55e':s5<0?'#60a5fa':'#9ca3af'}">${s5>0?'+':''}${s5.toFixed(1)}</span>` : '<span class="dim">—</span>';
+    // positive SMA = D doing well (blue), negative = V doing well (green)
+    const smaStr = s5 !== null ? `<span style="color:${s5>0?'#60a5fa':s5<0?'#22c55e':'#9ca3af'}">${s5>0?'+':''}${s5.toFixed(1)}</span>` : '<span class="dim">—</span>';
     const hist = m.historical ? '<span class="badge-hist">hist</span>' : '';
     const ninesStr = m.historical ? '<span class="dim">—</span>' : (m.nines||[]).join(', ') || '<span class="dim">—</span>';
     const ptsStr = m.historical
@@ -1160,16 +1164,16 @@ function render(matches) {
   <div class="card">
     <h2>Head to Head — ${matches.length} Matches</h2>
     <div class="stats">
-      <div class="stat"><div class="num pv">${vW}</div><div class="lbl">V Wins</div></div>
-      <div class="stat"><div class="num" style="color:#9ca3af">${ties}</div><div class="lbl">Ties</div></div>
       <div class="stat"><div class="num pd">${dW}</div><div class="lbl">D Wins</div></div>
-      <div class="stat"><div class="num" style="color:#f59e0b;font-size:28px">${(vW/matches.length*100).toFixed(0)}%</div><div class="lbl">V Win %</div></div>
+      <div class="stat"><div class="num" style="color:#9ca3af">${ties}</div><div class="lbl">Ties</div></div>
+      <div class="stat"><div class="num pv">${vW}</div><div class="lbl">V Wins</div></div>
+      <div class="stat"><div class="num" style="color:#60a5fa;font-size:28px">${(dW/matches.length*100).toFixed(0)}%</div><div class="lbl">D Win %</div></div>
       <div class="stat"><div class="num" style="font-size:28px;color:#9ca3af">${avgMargin.toFixed(1)}</div><div class="lbl">Avg Margin</div></div>
     </div>
   </div>
 
   <div class="card">
-    <h2>Match Margin + 5-Match Average &nbsp;<span style="font-size:11px;font-weight:400;color:#9ca3af">(+V / −D)</span></h2>
+    <h2>Match Margin + 5-Match Average &nbsp;<span style="font-size:11px;font-weight:400;color:#9ca3af">(+ D winning / − V winning)</span></h2>
     <canvas id="chart"></canvas>
   </div>
 
@@ -1188,9 +1192,9 @@ function render(matches) {
       datasets: [
         {
           label: 'Margin',
-          data: margins,
+          data: signedMargins,
           backgroundColor: barColors,
-          borderColor: barColors.map(c=>c.replace('.55','1').replace('.4','1')),
+          borderColor: barColors.map(c=>c.replace('.6','1').replace('.4','1')),
           borderWidth: 1,
           order: 2,
         },
@@ -1217,7 +1221,7 @@ function render(matches) {
             label: ctx => {
               if (ctx.datasetIndex===0) {
                 const v = ctx.raw;
-                return v>0 ? `V won by ${v}` : v<0 ? `D won by ${Math.abs(v)}` : 'Tie';
+                return v>0 ? `D won by ${v}` : v<0 ? `V won by ${Math.abs(v)}` : 'Tie';
               }
               return `5-SMA: ${ctx.raw !== null ? ctx.raw.toFixed(1) : 'n/a'}`;
             }
@@ -1227,7 +1231,7 @@ function render(matches) {
       scales: {
         x: { ticks: { color: '#9ca3af', maxTicksLimit: 12, maxRotation: 45 }, grid: { color: '#1e2a3a' } },
         y: { ticks: { color: '#9ca3af' }, grid: { color: '#1e2a3a' },
-             title: { display: true, text: '← D   margin   V →', color: '#9ca3af', font: { size: 11 } } }
+             title: { display: true, text: '← V winning   |   D winning →', color: '#9ca3af', font: { size: 11 } } }
       }
     }
   });
