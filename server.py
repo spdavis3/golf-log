@@ -1069,7 +1069,7 @@ body{font-family:-apple-system,sans-serif;background:#111827;color:#f9fafb;min-h
 .header{background:#1f2937;border-bottom:1px solid #374151;padding:20px 32px;display:flex;align-items:center;gap:16px}
 .header h1{font-size:22px;font-weight:800}
 .header a{color:#9ca3af;text-decoration:none;font-size:14px;margin-left:auto}
-.wrap{max-width:900px;margin:0 auto;padding:24px 20px}
+.wrap{max-width:960px;margin:0 auto;padding:24px 20px}
 .card{background:#1f2937;border:1px solid #374151;border-radius:14px;padding:20px;margin-bottom:20px}
 .card h2{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#9ca3af;margin-bottom:16px}
 .stats{display:flex;gap:0}
@@ -1077,12 +1077,16 @@ body{font-family:-apple-system,sans-serif;background:#111827;color:#f9fafb;min-h
 .stat:last-child{border-right:none}
 .stat .num{font-size:40px;font-weight:900}
 .stat .lbl{font-size:13px;color:#9ca3af;margin-top:4px}
-table{width:100%;border-collapse:collapse;font-size:14px}
-th{background:#0d1520;padding:10px 12px;text-align:left;color:#9ca3af;font-size:12px;font-weight:700}
-td{padding:10px 12px;border-bottom:1px solid #1e2a3a}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#0d1520;padding:9px 10px;text-align:left;color:#9ca3af;font-size:11px;font-weight:700;white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid #1e2a3a;white-space:nowrap}
 tr:last-child td{border-bottom:none}
+tr:hover td{background:#161f2e}
 .pv{color:#22c55e;font-weight:700} .pd{color:#60a5fa;font-weight:700}
-canvas{max-height:220px}
+.gold{color:#f59e0b;font-weight:700}
+.dim{color:#9ca3af}
+canvas{max-height:260px}
+.badge-hist{font-size:10px;color:#9ca3af;background:#1e2a3a;border-radius:4px;padding:1px 5px;vertical-align:middle;margin-left:4px}
 </style>
 </head>
 <body>
@@ -1099,61 +1103,133 @@ fetch('/api/matches').then(r=>r.json()).then(render).catch(()=>{
   document.getElementById('content').innerHTML='<p style="color:#ef4444;text-align:center;padding:60px">Could not load match data</p>';
 });
 
+function sma(arr, n, i) {
+  if (i < n-1) return null;
+  let s=0; for(let j=i-n+1;j<=i;j++) s+=arr[j]; return s/n;
+}
+
 function render(matches) {
   if (!matches.length) {
     document.getElementById('content').innerHTML='<p style="color:#9ca3af;text-align:center;padding:60px">No matches yet — play some golf!</p>';
     return;
   }
-  let vW=0,dW=0,ties=0,vPtsTotal=0,dPtsTotal=0;
-  const labels=[], vCum=[], dCum=[];
-  let vRun=0,dRun=0;
+
+  let vW=0, dW=0, ties=0;
   matches.forEach(m=>{
-    if(m.winner==='V')vW++; else if(m.winner==='D')dW++; else ties++;
-    vPtsTotal+=m.v_points; dPtsTotal+=m.d_points;
-    vRun+=m.v_points; dRun+=m.d_points;
-    labels.push(m.date);
-    vCum.push(vRun); dCum.push(dRun);
+    if(m.winner==='V') vW++; else if(m.winner==='D') dW++; else ties++;
   });
   const avgMargin = matches.reduce((s,m)=>s+Math.abs(m.margin),0)/matches.length;
 
+  // Chart data — margin per match + 5-SMA (positive = V won, negative = D won)
+  const margins = matches.map(m => m.margin);
+  const sma5 = margins.map((_,i) => sma(margins,5,i));
+  const chartLabels = matches.map((m,i) => m.date.startsWith('pre-2025') ? '#'+(i+1) : m.date);
+
+  // Bar colors: green for V win, blue for D win, gray for tie
+  const barColors = matches.map(m =>
+    m.winner==='V' ? 'rgba(34,197,94,.55)' : m.winner==='D' ? 'rgba(96,165,250,.55)' : 'rgba(156,163,175,.4)'
+  );
+
+  // Match log rows (most recent first, with running SMA index)
+  const rows = [...matches].reverse().map((m, ri) => {
+    const i = matches.length - 1 - ri; // chronological index
+    const s5 = sma5[i];
+    const res = m.winner==='V'
+      ? `<span class="pv">V +${m.margin}</span>`
+      : m.winner==='D'
+      ? `<span class="pd">D +${Math.abs(m.margin)}</span>`
+      : '<span class="dim">Tie</span>';
+    const honor = m.honor_next ? `<span class="${m.honor_next==='V'?'pv':'pd'}">${m.honor_next}</span>` : '<span class="dim">—</span>';
+    const smaStr = s5 !== null ? `<span style="color:${s5>0?'#22c55e':s5<0?'#60a5fa':'#9ca3af'}">${s5>0?'+':''}${s5.toFixed(1)}</span>` : '<span class="dim">—</span>';
+    const hist = m.historical ? '<span class="badge-hist">hist</span>' : '';
+    const ninesStr = m.historical ? '<span class="dim">—</span>' : (m.nines||[]).join(', ') || '<span class="dim">—</span>';
+    const ptsStr = m.historical
+      ? '<span class="dim">—</span>'
+      : `<span class="pv">${m.v_points}</span> / <span class="pd">${m.d_points}</span>`;
+    return `<tr>
+      <td class="dim">${m.date}${hist}</td>
+      <td>${ninesStr}</td>
+      <td>${ptsStr}</td>
+      <td>${res}</td>
+      <td>${smaStr}</td>
+      <td>${honor}</td>
+    </tr>`;
+  }).join('');
+
   document.getElementById('content').innerHTML = `
   <div class="card">
-    <h2>Head to Head</h2>
+    <h2>Head to Head — ${matches.length} Matches</h2>
     <div class="stats">
       <div class="stat"><div class="num pv">${vW}</div><div class="lbl">V Wins</div></div>
       <div class="stat"><div class="num" style="color:#9ca3af">${ties}</div><div class="lbl">Ties</div></div>
       <div class="stat"><div class="num pd">${dW}</div><div class="lbl">D Wins</div></div>
-      <div class="stat"><div class="num" style="color:#f59e0b">${matches.length}</div><div class="lbl">Matches</div></div>
-      <div class="stat"><div class="num" style="font-size:28px">${avgMargin.toFixed(1)}</div><div class="lbl">Avg Margin</div></div>
+      <div class="stat"><div class="num" style="color:#f59e0b;font-size:28px">${(vW/matches.length*100).toFixed(0)}%</div><div class="lbl">V Win %</div></div>
+      <div class="stat"><div class="num" style="font-size:28px;color:#9ca3af">${avgMargin.toFixed(1)}</div><div class="lbl">Avg Margin</div></div>
     </div>
   </div>
 
   <div class="card">
-    <h2>Cumulative Points</h2>
+    <h2>Match Margin + 5-Match Average &nbsp;<span style="font-size:11px;font-weight:400;color:#9ca3af">(+V / −D)</span></h2>
     <canvas id="chart"></canvas>
   </div>
 
-  <div class="card">
+  <div class="card" style="overflow-x:auto">
     <h2>Match Log</h2>
     <table>
-      <tr><th>Date</th><th>Nines</th><th>Holes</th><th>V Pts</th><th>D Pts</th><th>Result</th></tr>
-      ${[...matches].reverse().map(m=>{
-        const res=m.winner==='V'?`<span class="pv">V +${m.margin}</span>`:m.winner==='D'?`<span class="pd">D +${Math.abs(m.margin)}</span>`:'Tie';
-        return `<tr><td>${m.date}</td><td>${(m.nines||[]).join(', ')}</td><td>${m.holes_played}</td><td class="pv">${m.v_points}</td><td class="pd">${m.d_points}</td><td>${res}</td></tr>`;
-      }).join('')}
+      <tr><th>Date</th><th>Nines</th><th>V / D Pts</th><th>Result</th><th>5-SMA</th><th>Next Honor</th></tr>
+      ${rows}
     </table>
   </div>`;
 
   new Chart(document.getElementById('chart'), {
-    type:'line',
-    data:{
-      labels,
-      datasets:[
-        {label:'V',data:vCum,borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.1)',tension:.3,fill:false,pointRadius:4},
-        {label:'D',data:dCum,borderColor:'#60a5fa',backgroundColor:'rgba(96,165,250,.1)',tension:.3,fill:false,pointRadius:4}
+    type: 'bar',
+    data: {
+      labels: chartLabels,
+      datasets: [
+        {
+          label: 'Margin',
+          data: margins,
+          backgroundColor: barColors,
+          borderColor: barColors.map(c=>c.replace('.55','1').replace('.4','1')),
+          borderWidth: 1,
+          order: 2,
+        },
+        {
+          label: '5-SMA',
+          data: sma5,
+          type: 'line',
+          borderColor: '#f59e0b',
+          backgroundColor: 'transparent',
+          borderWidth: 2.5,
+          pointRadius: 0,
+          tension: 0.4,
+          spanGaps: false,
+          order: 1,
+        }
       ]
     },
-    options:{responsive:true,plugins:{legend:{labels:{color:'#9ca3af'}}},scales:{x:{ticks:{color:'#9ca3af'},grid:{color:'#1e2a3a'}},y:{ticks:{color:'#9ca3af'},grid:{color:'#1e2a3a'}}}}
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: '#9ca3af', boxWidth: 14 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              if (ctx.datasetIndex===0) {
+                const v = ctx.raw;
+                return v>0 ? `V won by ${v}` : v<0 ? `D won by ${Math.abs(v)}` : 'Tie';
+              }
+              return `5-SMA: ${ctx.raw !== null ? ctx.raw.toFixed(1) : 'n/a'}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#9ca3af', maxTicksLimit: 12, maxRotation: 45 }, grid: { color: '#1e2a3a' } },
+        y: { ticks: { color: '#9ca3af' }, grid: { color: '#1e2a3a' },
+             title: { display: true, text: '← D   margin   V →', color: '#9ca3af', font: { size: 11 } } }
+      }
+    }
   });
 }
 </script>
