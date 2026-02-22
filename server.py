@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""VD Golf — personal golf tracking PWA + VD match scoring"""
+"""Golf Log — personal golf tracking PWA + VD match scoring"""
 
 import json, os, math, base64
 from collections import defaultdict
@@ -186,7 +186,7 @@ def get_handicap_data():
 # Service Worker (v9)
 # ---------------------------------------------------------------------------
 SW_JS = """
-const CACHE = 'vd-golf-v9';
+const CACHE = 'golf-log-v1';
 const CORE = ['/'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)));
@@ -214,8 +214,8 @@ PWA_HTML = r"""<!DOCTYPE html>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="VD Golf">
-<title>VD Golf</title>
+<meta name="apple-mobile-web-app-title" content="Golf Log">
+<title>Golf Log</title>
 <link rel="apple-touch-icon" href="/icon.png">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 <style>
@@ -344,7 +344,7 @@ input[type=text],input[type=number]{width:100%;padding:11px;background:#1e2a3a;b
 
 <!-- ═══════════ SCORE TAB ═══════════ -->
 <div id="tab-score" class="tab active">
-  <div class="topbar"><h1>⛳ VD Golf</h1><div style="font-size:12px;color:var(--muted)" id="score-date"></div></div>
+  <div class="topbar"><h1>⛳ Golf Log</h1><div style="font-size:12px;color:var(--muted)" id="score-date"></div></div>
 
   <!-- Resume card -->
   <div id="resume-card" class="resume-card" style="display:none">
@@ -669,9 +669,9 @@ function freshR() {
   };
 }
 function today() { return new Date().toISOString().slice(0,10); }
-function saveState() { localStorage.setItem('vd-golf-round', JSON.stringify(R)); }
+function saveState() { localStorage.setItem('golf-log-round', JSON.stringify(R)); }
 function loadState() {
-  try { const s = localStorage.getItem('vd-golf-round'); return s ? JSON.parse(s) : null; }
+  try { const s = localStorage.getItem('golf-log-round'); return s ? JSON.parse(s) : null; }
   catch(e) { return null; }
 }
 
@@ -1514,7 +1514,7 @@ HISTORY_HTML = """<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>VD Golf — History</title>
+<title>Golf Log — History</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -1545,7 +1545,7 @@ canvas{display:block}
 <body>
 <div class="header">
   <div>⛳</div>
-  <h1>VD Golf — Match History</h1>
+  <h1>Golf Log — Match History</h1>
   <a href="/">← Scoring App</a>
 </div>
 <div class="wrap">
@@ -1763,5 +1763,5 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    print(f'VD Golf → http://localhost:{PORT}')
+    print(f'Golf Log → http://localhost:{PORT}')
     HTTPServer(('', PORT), Handler).serve_forever()
