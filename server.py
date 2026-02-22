@@ -173,7 +173,7 @@ MANIFEST_JSON = json.dumps({
 # Service Worker
 # ---------------------------------------------------------------------------
 SW_JS = """
-const CACHE = 'golf-log-v9';
+const CACHE = 'golf-log-v10';
 const CORE = ['/', '/icon.png', '/manifest.json'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)));
@@ -288,6 +288,8 @@ select.course-sel{width:100%;padding:11px;background:#1e2a3a;border:1px solid va
 .badges{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
 .badge{display:inline-flex;align-items:center;gap:5px;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600}
 .badge-honor{background:rgba(245,158,11,.12);border:1px solid var(--gold);color:var(--gold)}
+.badge-honor.honor-v{background:rgba(255,153,51,.12);border-color:var(--saffron);color:var(--saffron)}
+.badge-honor.honor-d{background:rgba(34,197,94,.12);border-color:var(--green);color:var(--green)}
 .badge-stroke{background:rgba(96,165,250,.12);border:1px solid var(--blue);color:var(--blue)}
 /* result overlay */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
@@ -652,7 +654,7 @@ function freshR() {
     course_id: null, course_name: '', rating: null, slope: null, par: 72,
     nine_hole: false, holes: [],
     course_hdcp: null, budget: null, index: null,
-    vd_enabled: false, initialHonor: 'V', startOffset: -1,
+    vd_enabled: false, initialHonor: 'D', startOffset: 7,
     strokeMap: {}, strokesComputedAt: [],
     curV: 5, curD: 5, curMe: 5,
     results: [], inProgress: false,
@@ -841,7 +843,9 @@ function showHole(idx) {
   const sb = document.getElementById('badge-stroke');
   if (R.vd_enabled) {
     const strokes = R.strokeMap[idx]||{v:false,d:false};
-    hb.textContent='🏌️ '+getHonor()+' has honor'; hb.style.display='inline-flex';
+    const honor=getHonor();
+    hb.textContent='🏌️ '+honor+' has honor'; hb.style.display='inline-flex';
+    hb.className='badge badge-honor '+(honor==='D'?'honor-d':'honor-v');
     if (strokes.v||strokes.d) {
       sb.textContent='+ '+(strokes.v?'V':'D')+' gets a stroke'; sb.style.display='inline-flex';
     } else { sb.style.display='none'; }
