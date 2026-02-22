@@ -209,7 +209,7 @@ MANIFEST_JSON = json.dumps({
 # Service Worker
 # ---------------------------------------------------------------------------
 SW_JS = """
-const CACHE = 'golf-log-v15';
+const CACHE = 'golf-log-v16';
 const CORE = ['/', '/icon.png', '/manifest.json'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)));
@@ -1101,9 +1101,11 @@ function matchScore() {
   let vNet=0,dNet=0;
   R.results.forEach(r=>{
     if(r.vd){
-      // Rule: hole is halved if BOTH nets are bogey or worse (net >= par+1)
-      if(r.vd.vNet >= r.par+1 && r.vd.dNet >= r.par+1) return;
-      vNet+=r.vd.vNet; dNet+=r.vd.dNet;
+      // Cap each player at double bogey; halve only if BOTH hit the cap
+      const vC=Math.min(r.vd.vNet, r.par+2);
+      const dC=Math.min(r.vd.dNet, r.par+2);
+      if(vC >= r.par+2 && dC >= r.par+2) return;
+      vNet+=vC; dNet+=dC;
     }
   });
   return {vNet,dNet};
@@ -1188,10 +1190,12 @@ function showOverlay(hole,calc) {
   const m=margin();
   document.getElementById('ov-hole').textContent='Hole '+hole.number;
   const w=document.getElementById('ov-winner');
-  const bothOverBogey = calc.vNet >= hole.par+1 && calc.dNet >= hole.par+1;
-  if (bothOverBogey){w.textContent='Halved (both over bogey)';w.style.color='var(--muted)';}
-  else if (calc.vNet<calc.dNet){w.textContent='V wins hole';w.style.color='var(--saffron)';}
-  else if (calc.dNet<calc.vNet){w.textContent='D wins hole';w.style.color='var(--green)';}
+  const vC=Math.min(calc.vNet, hole.par+2);
+  const dC=Math.min(calc.dNet, hole.par+2);
+  const bothAtCap = vC >= hole.par+2 && dC >= hole.par+2;
+  if (bothAtCap){w.textContent='Halved (both double bogey+)';w.style.color='var(--muted)';}
+  else if (vC<dC){w.textContent='V wins hole';w.style.color='var(--saffron)';}
+  else if (dC<vC){w.textContent='D wins hole';w.style.color='var(--green)';}
   else{w.textContent='Halved';w.style.color='var(--muted)';}
   const lr=R.results[R.results.length-1];
   const vDisp=lr.vd.vGross+(lr.vd.vStroke?'<span class="stroke-mark">*</span>':'');
@@ -1325,8 +1329,9 @@ function showSummary() {
     let vNetR=0,dNetR=0;
     R.results.forEach(r=>{
       if (!r.vd) return;
-      const halved = r.vd.vNet >= r.par+1 && r.vd.dNet >= r.par+1;
-      if (!halved) { vNetR+=r.vd.vNet; dNetR+=r.vd.dNet; }
+      const vC=Math.min(r.vd.vNet,r.par+2), dC=Math.min(r.vd.dNet,r.par+2);
+      const halved = vC >= r.par+2 && dC >= r.par+2;
+      if (!halved) { vNetR+=vC; dNetR+=dC; }
       const lead=dNetR-vNetR; // positive=V ahead
       const ls=halved?'<span style="color:var(--muted)">—</span>':lead>0?`<span class="pv">V +${lead}</span>`:lead<0?`<span class="pd">D +${Math.abs(lead)}</span>`:'Even';
       const vs=r.vd.vGross+(r.vd.vStroke?'<span class="stroke-mark">*</span>':'');
