@@ -503,7 +503,7 @@ input[type=text],input[type=number]{width:100%;padding:11px;background:#1e2a3a;b
   <!-- VD score entry -->
   <div id="entry-vd">
     <div class="entry">
-      <div class="entry-name" style="color:var(--green)">V (Me)</div>
+      <div class="entry-name" style="color:var(--green)">V</div>
       <div class="entry-row">
         <button class="sbtn minus" onclick="adj('v',-1)">−</button>
         <div><div class="snum" id="v-num">4</div><div class="slabel" id="v-lbl">Par</div></div>
@@ -511,7 +511,7 @@ input[type=text],input[type=number]{width:100%;padding:11px;background:#1e2a3a;b
       </div>
     </div>
     <div class="entry">
-      <div class="entry-name" style="color:var(--blue)">D</div>
+      <div class="entry-name" style="color:var(--blue)">D (Me)</div>
       <div class="entry-row">
         <button class="sbtn minus" onclick="adj('d',-1)">−</button>
         <div><div class="snum" id="d-num">4</div><div class="slabel" id="d-lbl">Par</div></div>
@@ -930,10 +930,10 @@ function recordHole() {
     const strokes=R.strokeMap[idx]||{v:false,d:false};
     const calc=calcHole(hole,R.curV,R.curD,strokes.v,strokes.d);
     const honor=getHonor();
-    const adjV=adjHoleScore(R.curV,hole.par,hole.handicap,R.course_hdcp);
+    const adjD=adjHoleScore(R.curD,hole.par,hole.handicap,R.course_hdcp);
     R.results.push({
       holeNumber:hole.number, par:hole.par, handicap:hole.handicap,
-      gross:R.curV, adj:adjV, strokes_received:strokes.v?1:0,
+      gross:R.curD, adj:adjD, strokes_received:strokes.d?1:0,
       vd:{vGross:R.curV,dGross:R.curD,vStroke:strokes.v,dStroke:strokes.d,
           vNet:calc.vNet,dNet:calc.dNet,vCap:calc.vCap,dCap:calc.dCap,
           vPts:calc.vPts,dPts:calc.dPts,honor}
