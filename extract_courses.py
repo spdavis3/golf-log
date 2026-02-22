@@ -31,10 +31,10 @@ MOUNTAIN_HOLES = [
 ]
 
 courses = [
-    # ── Governor's Run 18-hole combos ──────────────────────────────────────
+    # ── Governors Club 18-hole combos ──────────────────────────────────────
     {
         'id': 'gov-lakes-foothills',
-        'name': 'Gov Lakes to Foothills',
+        'name': 'GC Lakes to Foothills',
         'aliases': ['Lakes to Foothills'],
         'rating': 69.9, 'slope': 131, 'par': 72,
         'nines': ['Lakes','Foothills'],
@@ -42,7 +42,7 @@ courses = [
     },
     {
         'id': 'gov-mountain-lakes',
-        'name': 'Gov Mountain to Lakes',
+        'name': 'GC Mountain to Lakes',
         'aliases': ['Mountain to Lakes'],
         'rating': 69.0, 'slope': 130, 'par': 72,
         'nines': ['Mountain','Lakes'],
@@ -50,7 +50,7 @@ courses = [
     },
     {
         'id': 'gov-foothills-mountain',
-        'name': 'Gov Foothills to Mountain',
+        'name': 'GC Foothills to Mountain',
         'aliases': ['Foothills to Mountain'],
         'rating': 69.3, 'slope': 131, 'par': 72,
         'nines': ['Foothills','Mountain'],
@@ -58,7 +58,7 @@ courses = [
     },
     {
         'id': 'gov-mountain-mountain',
-        'name': 'Gov Mountain Mountain',
+        'name': 'GC Mountain, Mountain',
         'aliases': [],
         'rating': 68.4, 'slope': 130, 'par': 72,
         'nines': ['Mountain','Mountain'],
@@ -66,7 +66,7 @@ courses = [
     },
     {
         'id': 'gov-foothills-foothills',
-        'name': 'Gov Foothills to Foothills',
+        'name': 'GC Foothills, Foothills',
         'aliases': [],
         'rating': 70.2, 'slope': 132, 'par': 72,
         'nines': ['Foothills','Foothills'],

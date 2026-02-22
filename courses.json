@@ -1,7 +1,7 @@
 [
   {
     "id": "gov-lakes-foothills",
-    "name": "Gov Lakes to Foothills",
+    "name": "GC Lakes to Foothills",
     "aliases": [
       "Lakes to Foothills"
     ],
@@ -107,7 +107,7 @@
   },
   {
     "id": "gov-mountain-lakes",
-    "name": "Gov Mountain to Lakes",
+    "name": "GC Mountain to Lakes",
     "aliases": [
       "Mountain to Lakes"
     ],
@@ -213,7 +213,7 @@
   },
   {
     "id": "gov-foothills-mountain",
-    "name": "Gov Foothills to Mountain",
+    "name": "GC Foothills to Mountain",
     "aliases": [
       "Foothills to Mountain"
     ],
@@ -319,7 +319,7 @@
   },
   {
     "id": "gov-mountain-mountain",
-    "name": "Gov Mountain Mountain",
+    "name": "GC Mountain, Mountain",
     "aliases": [],
     "rating": 68.4,
     "slope": 130,
@@ -423,7 +423,7 @@
   },
   {
     "id": "gov-foothills-foothills",
-    "name": "Gov Foothills to Foothills",
+    "name": "GC Foothills, Foothills",
     "aliases": [],
     "rating": 70.2,
     "slope": 132,
@@ -631,7 +631,7 @@
   },
   {
     "id": "gov-lakes-foothills-blue",
-    "name": "Lakes to Foothills Blue",
+    "name": "GC Lakes to Foothills Blue",
     "aliases": [],
     "rating": 71.9,
     "slope": 135,
@@ -735,7 +735,7 @@
   },
   {
     "id": "gov-foothills-mountain-blue",
-    "name": "Foothills to Mountain Blue",
+    "name": "GC Foothills to Mountain Blue",
     "aliases": [
       "Foothills to Mountain Blu"
     ],

@@ -357,9 +357,9 @@ input[type=text],input[type=number]{width:100%;padding:11px;background:#1e2a3a;b
     <button class="btn btn-red" onclick="deleteRound()" style="margin:0;font-size:13px;padding:9px">Delete Round</button>
   </div>
 
-  <!-- Gov Run nine picker -->
+  <!-- Governors Club nine picker -->
   <div class="card">
-    <h3>Gov Run — Select Nines</h3>
+    <h3>Governors Club — Select Nines</h3>
     <div class="nine-row">
       <button id="nine-btn-0" class="nine-btn" onclick="toggleNineBtn(0)">Lakes</button>
       <button id="nine-btn-1" class="nine-btn" onclick="toggleNineBtn(1)">Foothills</button>
@@ -639,12 +639,12 @@ const NINE_COMBOS = {
   '0':  {id:'gov-lakes',             name:'Lakes (9)',               rating:69.6, slope:129, par:36},
   '1':  {id:'gov-foothills',         name:'Foothills (9)',           rating:70.2, slope:132, par:36},
   '2':  {id:'gov-mountain',          name:'Mountain (9)',            rating:null, slope:null, par:36},
-  '01': {id:'gov-lakes-foothills',   name:'Gov Lakes to Foothills',  rating:69.9, slope:131, par:72},
-  '12': {id:'gov-foothills-mountain',name:'Gov Foothills to Mountain',rating:69.3,slope:131, par:72},
-  '02': {id:'gov-mountain-lakes',    name:'Gov Mountain to Lakes',   rating:69.0, slope:130, par:72},
-  '00': {id:'gov-lakes-lakes',       name:'Lakes, Lakes',            rating:69.6, slope:129, par:72},
-  '11': {id:'gov-foothills-foothills',name:'Gov Foothills to Foothills',rating:70.2,slope:132,par:72},
-  '22': {id:'gov-mountain-mountain', name:'Gov Mountain Mountain',   rating:68.4, slope:130, par:72},
+  '01': {id:'gov-lakes-foothills',   name:'GC Lakes to Foothills',   rating:69.9, slope:131, par:72},
+  '12': {id:'gov-foothills-mountain',name:'GC Foothills to Mountain', rating:69.3, slope:131, par:72},
+  '02': {id:'gov-mountain-lakes',    name:'GC Mountain to Lakes',    rating:69.0, slope:130, par:72},
+  '00': {id:'gov-lakes-lakes',       name:'GC Lakes, Lakes',         rating:69.6, slope:129, par:72},
+  '11': {id:'gov-foothills-foothills',name:'GC Foothills, Foothills',rating:70.2, slope:132, par:72},
+  '22': {id:'gov-mountain-mountain', name:'GC Mountain, Mountain',   rating:68.4, slope:130, par:72},
 };
 
 // ═══════════════════════════════════════════════════════════
