@@ -212,7 +212,7 @@ PWA_HTML = r"""<!DOCTYPE html>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-:root{--green:#22c55e;--red:#ef4444;--blue:#60a5fa;--gold:#f59e0b;--bg:#111827;--card:#1f2937;--border:#374151;--text:#f9fafb;--muted:#9ca3af}
+:root{--green:#22c55e;--red:#ef4444;--blue:#60a5fa;--gold:#f59e0b;--saffron:#FF9933;--bg:#111827;--card:#1f2937;--border:#374151;--text:#f9fafb;--muted:#9ca3af}
 body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);min-height:100svh}
 /* tabs */
 .tab{display:none;max-width:440px;margin:0 auto;padding-bottom:76px;overflow-y:auto}
@@ -309,7 +309,7 @@ select.course-sel{width:100%;padding:11px;background:#1e2a3a;border:1px solid va
 .htbl td{padding:6px 4px;text-align:center;border-bottom:1px solid #1e2a3a}
 .htbl tr:last-child td{border-bottom:none}
 .htbl .total-row td{font-weight:800;background:#0d1520}
-.pv{color:var(--green);font-weight:700} .pd{color:var(--blue);font-weight:700}
+.pv{color:var(--saffron);font-weight:700} .pd{color:var(--green);font-weight:700}
 .stroke-mark{font-size:9px;color:var(--gold);vertical-align:super}
 /* resume card */
 .resume-card{margin:10px 14px;background:var(--card);border:2px solid var(--gold);border-radius:14px;padding:14px}
@@ -454,8 +454,8 @@ input[type=text],input[type=number]{width:100%;padding:11px;background:#1e2a3a;b
   <!-- Score bar -->
   <div id="hole-sbar-vd" class="sbar">
     <div class="sbar-player">
-      <div class="sbar-pts" id="sb-v" style="color:var(--green)">0</div>
-      <div class="sbar-label" style="color:var(--green)">V pts</div>
+      <div class="sbar-pts" id="sb-v" style="color:var(--saffron)">0</div>
+      <div class="sbar-label" style="color:var(--saffron)">V pts</div>
       <div class="sbar-nine" id="sb-v-nine">–</div>
     </div>
     <div class="sbar-mid">
@@ -463,8 +463,8 @@ input[type=text],input[type=number]{width:100%;padding:11px;background:#1e2a3a;b
       <div class="sbar-hint" id="sb-hint"></div>
     </div>
     <div class="sbar-player">
-      <div class="sbar-pts" id="sb-d" style="color:var(--blue)">0</div>
-      <div class="sbar-label" style="color:var(--blue)">D pts</div>
+      <div class="sbar-pts" id="sb-d" style="color:var(--green)">0</div>
+      <div class="sbar-label" style="color:var(--green)">D pts</div>
       <div class="sbar-nine" id="sb-d-nine">–</div>
     </div>
   </div>
@@ -503,7 +503,7 @@ input[type=text],input[type=number]{width:100%;padding:11px;background:#1e2a3a;b
   <!-- VD score entry -->
   <div id="entry-vd">
     <div class="entry">
-      <div class="entry-name" style="color:var(--green)">V</div>
+      <div class="entry-name" style="color:var(--saffron)">V</div>
       <div class="entry-row">
         <button class="sbtn minus" onclick="adj('v',-1)">−</button>
         <div><div class="snum" id="v-num">4</div><div class="slabel" id="v-lbl">Par</div></div>
@@ -511,7 +511,7 @@ input[type=text],input[type=number]{width:100%;padding:11px;background:#1e2a3a;b
       </div>
     </div>
     <div class="entry">
-      <div class="entry-name" style="color:var(--blue)">D (Me)</div>
+      <div class="entry-name" style="color:var(--green)">D (Me)</div>
       <div class="entry-row">
         <button class="sbtn minus" onclick="adj('d',-1)">−</button>
         <div><div class="snum" id="d-num">4</div><div class="slabel" id="d-lbl">Par</div></div>
@@ -904,7 +904,7 @@ function updateScoreBar() {
     const lead=document.getElementById('sb-lead'); const hint=document.getElementById('sb-hint');
     if (m===0) { lead.textContent='Even'; lead.style.color='var(--muted)'; hint.textContent=''; }
     else {
-      const who=m>0?'V':'D', c=m>0?'var(--green)':'var(--blue)';
+      const who=m>0?'V':'D', c=m>0?'var(--saffron)':'var(--green)';
       lead.textContent=`${who} +${Math.abs(m)}`; lead.style.color=c;
       const st=Math.floor(Math.abs(m)/5), tr=m>0?'D':'V';
       hint.textContent = st>0 ? `${tr} gets ${st} stroke${st>1?'s':''} next 9` : `${5-(Math.abs(m)%5)} to next stroke`;
