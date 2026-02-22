@@ -209,7 +209,7 @@ MANIFEST_JSON = json.dumps({
 # Service Worker
 # ---------------------------------------------------------------------------
 SW_JS = """
-const CACHE = 'golf-log-v14';
+const CACHE = 'golf-log-v15';
 const CORE = ['/', '/icon.png', '/manifest.json'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)));
@@ -300,11 +300,13 @@ select.course-sel{width:100%;padding:11px;background:#1e2a3a;border:1px solid va
 .honor-row{display:flex;gap:10px;margin-top:6px}
 .hbtn{flex:1;padding:12px;border-radius:10px;border:2px solid var(--border);background:transparent;color:var(--text);font-size:20px;font-weight:800;cursor:pointer;transition:all .15s}
 .hbtn.sel{border-color:var(--gold);background:rgba(245,158,11,.1);color:var(--gold)}
+.hbtn-d.sel{border-color:var(--green);background:rgba(34,197,94,.1);color:var(--green)}
+.hbtn-v.sel{border-color:var(--saffron);background:rgba(255,153,51,.1);color:var(--saffron)}
 /* score entry */
 .entry{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 16px;margin:6px 14px}
 .entry-name{font-size:14px;font-weight:700;margin-bottom:10px}
 .entry-row{display:flex;align-items:center;justify-content:center;gap:22px}
-.sbtn{width:58px;height:58px;border-radius:50%;border:none;font-size:30px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .1s}
+.sbtn{width:58px;height:58px;border-radius:50%;border:none;font-size:30px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .1s;touch-action:manipulation}
 .sbtn:active{transform:scale(.88)}
 .sbtn.minus{background:#374151;color:var(--text)}
 .sbtn.plus{background:var(--blue);color:#fff}
@@ -419,8 +421,8 @@ input[type=text],input[type=number]{width:100%;padding:11px;background:#1e2a3a;b
     <div id="vd-opts" style="display:none;margin-top:12px">
       <h3>Honor on Hole 1</h3>
       <div class="honor-row">
-        <button class="hbtn sel" id="hbtn-V" onclick="setHonor('V')">V</button>
-        <button class="hbtn" id="hbtn-D" onclick="setHonor('D')">D</button>
+        <button class="hbtn hbtn-v" id="hbtn-V" onclick="setHonor('V')">V</button>
+        <button class="hbtn hbtn-d" id="hbtn-D" onclick="setHonor('D')">D</button>
       </div>
       <h3 style="margin-top:14px">Starting Score</h3>
       <div style="display:flex;align-items:center;justify-content:center;gap:22px;padding:4px 0">
@@ -674,10 +676,10 @@ input[type=text],input[type=number]{width:100%;padding:11px;background:#1e2a3a;b
   <div class="overlay-card">
     <div class="ov-hole" id="ov-hole">Hole 1</div>
     <div class="ov-winner" id="ov-winner">Halved</div>
+    <div class="ov-match" id="ov-match">Even</div>
     <div class="ov-scores" id="ov-scores"></div>
     <div class="ov-detail" id="ov-detail"></div>
     <div id="ov-nine-sum" style="display:none"></div>
-    <div class="ov-match" id="ov-match">Even</div>
     <button class="btn btn-green" onclick="nextHole()" id="ov-next" style="width:100%;margin:0">Next →</button>
   </div>
 </div>
@@ -760,7 +762,7 @@ function freshR() {
     course_id: null, course_name: '', rating: null, slope: null, par: 72,
     nine_hole: false, holes: [],
     course_hdcp: null, budget: null, index: null,
-    vd_enabled: false, initialHonor: 'D', startOffset: 7,
+    vd_enabled: false, initialHonor: 'D', startOffset: -5,
     strokeMap: {}, strokesComputedAt: [],
     curV: 5, curD: 5, curMe: 5,
     results: [], inProgress: false,
@@ -1099,8 +1101,8 @@ function matchScore() {
   let vNet=0,dNet=0;
   R.results.forEach(r=>{
     if(r.vd){
-      // Rule: hole is halved if BOTH nets are worse than bogey (net > par+1)
-      if(r.vd.vNet > r.par+1 && r.vd.dNet > r.par+1) return;
+      // Rule: hole is halved if BOTH nets are bogey or worse (net >= par+1)
+      if(r.vd.vNet >= r.par+1 && r.vd.dNet >= r.par+1) return;
       vNet+=r.vd.vNet; dNet+=r.vd.dNet;
     }
   });
@@ -1186,7 +1188,7 @@ function showOverlay(hole,calc) {
   const m=margin();
   document.getElementById('ov-hole').textContent='Hole '+hole.number;
   const w=document.getElementById('ov-winner');
-  const bothOverBogey = calc.vNet > hole.par+1 && calc.dNet > hole.par+1;
+  const bothOverBogey = calc.vNet >= hole.par+1 && calc.dNet >= hole.par+1;
   if (bothOverBogey){w.textContent='Halved (both over bogey)';w.style.color='var(--muted)';}
   else if (calc.vNet<calc.dNet){w.textContent='V wins hole';w.style.color='var(--saffron)';}
   else if (calc.dNet<calc.vNet){w.textContent='D wins hole';w.style.color='var(--green)';}
@@ -1323,7 +1325,7 @@ function showSummary() {
     let vNetR=0,dNetR=0;
     R.results.forEach(r=>{
       if (!r.vd) return;
-      const halved = r.vd.vNet > r.par+1 && r.vd.dNet > r.par+1;
+      const halved = r.vd.vNet >= r.par+1 && r.vd.dNet >= r.par+1;
       if (!halved) { vNetR+=r.vd.vNet; dNetR+=r.vd.dNet; }
       const lead=dNetR-vNetR; // positive=V ahead
       const ls=halved?'<span style="color:var(--muted)">—</span>':lead>0?`<span class="pv">V +${lead}</span>`:lead<0?`<span class="pd">D +${Math.abs(lead)}</span>`:'Even';
