@@ -173,7 +173,7 @@ MANIFEST_JSON = json.dumps({
 # Service Worker
 # ---------------------------------------------------------------------------
 SW_JS = """
-const CACHE = 'golf-log-v11';
+const CACHE = 'golf-log-v12';
 const CORE = ['/', '/icon.png', '/manifest.json'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)));
@@ -575,7 +575,7 @@ input[type=text],input[type=number]{width:100%;padding:11px;background:#1e2a3a;b
     </div>
   </div>
   <button class="btn btn-green" id="save-round-btn" onclick="saveRound()">Save Round</button>
-  <button class="btn btn-ghost" onclick="newRound()">New Round</button>
+  <button class="btn btn-red" onclick="discardRound()">Discard Round</button>
 </div>
 
 <!-- ═══════════ RESULT OVERLAY ═══════════ -->
@@ -1185,8 +1185,6 @@ function goBackToHole(targetIdx) {
 // ═══════════════════════════════════════════════════════════
 function showSummary() {
   R.inProgress=false; saveState();
-  // Auto-save to server immediately so data is never lost
-  saveRound(true);
   document.getElementById('screen-summary').classList.add('open');
   document.getElementById('sum-date').textContent=R.date;
   document.getElementById('sum-course').textContent=R.course_name||'—';
@@ -1304,6 +1302,13 @@ function getHonorNext() {
 }
 
 function newRound() {
+  R=freshR(); saveState();
+  document.getElementById('screen-summary').classList.remove('open');
+  initScoreTab();
+}
+
+function discardRound() {
+  if (!confirm('Discard this round? It will not be saved.')) return;
   R=freshR(); saveState();
   document.getElementById('screen-summary').classList.remove('open');
   initScoreTab();
