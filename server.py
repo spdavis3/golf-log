@@ -209,7 +209,7 @@ MANIFEST_JSON = json.dumps({
 # Service Worker
 # ---------------------------------------------------------------------------
 SW_JS = """
-const CACHE = 'golf-log-v16';
+const CACHE = 'golf-log-v17';
 const CORE = ['/', '/icon.png', '/manifest.json'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)));
@@ -584,15 +584,32 @@ input[type=text],input[type=number]{width:100%;padding:11px;background:#1e2a3a;b
   <div class="topbar"><h1>Round Complete</h1><div style="font-size:12px;color:var(--muted)" id="sum-date"></div></div>
   <!-- VD result (shown for VD rounds) -->
   <div id="sum-vd-section" style="display:none">
-    <div class="win-banner" id="win-banner"></div>
-    <div class="card">
-      <h3>Match Result</h3>
-      <div class="stat-row"><span class="stat-lbl">V Gross</span><span class="stat-val" style="color:var(--saffron)" id="sum-v">0</span></div>
-      <div class="stat-row"><span class="stat-lbl">D Gross</span><span class="stat-val" style="color:var(--green)" id="sum-d">0</span></div>
-      <div class="stat-row"><span class="stat-lbl">Net Lead</span><span class="stat-val" id="sum-margin">Even</span></div>
+    <div style="text-align:center;padding:18px 16px 4px">
+      <div style="font-size:28px">🏆</div>
+      <div id="sum-final-score" style="font-size:56px;font-weight:900;line-height:1.1;margin-top:2px">—</div>
+      <div id="sum-match-change" style="font-size:15px;margin-top:6px;color:var(--muted)">Match —</div>
+    </div>
+    <div class="card" style="padding:14px 16px">
+      <div style="display:flex;justify-content:space-around">
+        <div style="text-align:center">
+          <div style="font-size:12px;color:var(--saffron);font-weight:700;margin-bottom:4px">V</div>
+          <div id="sum-v-vpar" style="font-size:24px;font-weight:900">—</div>
+          <div style="font-size:11px;color:var(--muted)">vs par</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:12px;color:var(--green);font-weight:700;margin-bottom:4px">D</div>
+          <div id="sum-d-vpar" style="font-size:24px;font-weight:900">—</div>
+          <div style="font-size:11px;color:var(--muted)">vs par</div>
+        </div>
+      </div>
     </div>
   </div>
-  <!-- GHIN round stats -->
+  <!-- Hole table (VD) -->
+  <div id="sum-hole-card" class="card" style="overflow-x:auto;display:none">
+    <h3>Hole by Hole <span style="font-weight:400;color:var(--muted)">(*= stroke)</span></h3>
+    <table class="htbl" id="hole-tbl"></table>
+  </div>
+  <!-- Round stats (always shown) -->
   <div class="card">
     <h3>Round Stats</h3>
     <div class="stat-row"><span class="stat-lbl">Course</span><span class="stat-val" id="sum-course" style="font-size:13px;text-align:right;max-width:200px"></span></div>
@@ -600,11 +617,6 @@ input[type=text],input[type=number]{width:100%;padding:11px;background:#1e2a3a;b
     <div class="stat-row"><span class="stat-lbl">Adj Score</span><span class="stat-val" id="sum-adj">—</span></div>
     <div class="stat-row"><span class="stat-lbl">Differential</span><span class="stat-val" id="sum-diff">—</span></div>
     <div class="stat-row"><span class="stat-lbl">Proj New Index</span><span class="stat-val" id="sum-proj-index">—</span></div>
-  </div>
-  <!-- Hole table (VD) -->
-  <div id="sum-hole-card" class="card" style="overflow-x:auto;display:none">
-    <h3>Hole by Hole <span style="font-weight:400;color:var(--muted)">(*= stroke)</span></h3>
-    <table class="htbl" id="hole-tbl"></table>
   </div>
   <div class="card" style="padding:12px 16px">
     <div class="toggle-row">
@@ -1316,13 +1328,28 @@ function showSummary() {
     const m=margin();
     const totV=R.results.filter(r=>r.vd).reduce((s,r)=>s+r.vd.vGross,0);
     const totD=R.results.filter(r=>r.vd).reduce((s,r)=>s+r.vd.dGross,0);
-    document.getElementById('sum-v').textContent=totV;
-    document.getElementById('sum-d').textContent=totD;
-    const banner=document.getElementById('win-banner');
-    const marginEl=document.getElementById('sum-margin');
-    if (m>0){banner.textContent=`🏆 V wins +${m}!`;banner.style.color='var(--saffron)';marginEl.textContent=`V +${m}`;marginEl.style.color='var(--saffron)';}
-    else if (m<0){banner.textContent=`🏆 D wins +${Math.abs(m)}!`;banner.style.color='var(--green)';marginEl.textContent=`D +${Math.abs(m)}`;marginEl.style.color='var(--green)';}
-    else{banner.textContent='All Square! 🤝';banner.style.color='var(--gold)';marginEl.textContent='Even';marginEl.style.color='var(--muted)';}
+
+    // Final match score
+    const finalEl=document.getElementById('sum-final-score');
+    if (m>0){finalEl.textContent=`V+${m}`;finalEl.style.color='var(--saffron)';}
+    else if (m<0){finalEl.textContent=`D+${Math.abs(m)}`;finalEl.style.color='var(--green)';}
+    else{finalEl.textContent='Even';finalEl.style.color='var(--muted)';}
+
+    // Round play change (margin shift from just this round's holes)
+    const playChange=m-(R.startOffset||0);
+    const chEl=document.getElementById('sum-match-change');
+    if (playChange<0){chEl.textContent=`Match D+${Math.abs(playChange)}`;chEl.style.color='var(--green)';}
+    else if (playChange>0){chEl.textContent=`Match V+${playChange}`;chEl.style.color='var(--saffron)';}
+    else{chEl.textContent='Match Even';chEl.style.color='var(--muted)';}
+
+    // Score vs par
+    const vVsPar=totV-R.par, dVsPar=totD-R.par;
+    const fvp=n=>n>0?`+${n}`:n<0?`${n}`:'E';
+    const vParEl=document.getElementById('sum-v-vpar');
+    const dParEl=document.getElementById('sum-d-vpar');
+    vParEl.textContent=fvp(vVsPar); vParEl.style.color=vVsPar>0?'var(--red)':vVsPar<0?'var(--green)':'var(--muted)';
+    dParEl.textContent=fvp(dVsPar); dParEl.style.color=dVsPar>0?'var(--red)':dVsPar<0?'var(--green)':'var(--muted)';
+
     // Hole table
     const tbl=document.getElementById('hole-tbl');
     tbl.innerHTML=`<tr><th>Hole</th><th>Par</th><th style="color:var(--saffron)">V</th><th style="color:var(--green)">D</th><th>Net Lead</th></tr>`;
