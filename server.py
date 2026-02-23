@@ -175,18 +175,18 @@ def get_handicap_data():
     year_avg = round(sum(yr_diffs) / len(yr_diffs), 1) if yr_diffs else None
 
     # Budget: target_diff on most recent 18-hole posted course
-    budget = target_course = None
+    budget = target_course = target_par = None
     if target_diff is not None:
         for r in reversed(posted):
             if not r.get('nine_hole') and r.get('rating') and r.get('slope'):
-                par    = r.get('par', 72)
-                budget = math.floor(r['rating'] + target_diff * r['slope'] / 113) - par
+                target_par = r.get('par', 72)
+                budget = math.floor(r['rating'] + target_diff * r['slope'] / 113) - target_par
                 target_course = r.get('course_name', '')
                 break
 
     return {
         'index': index, 'anti_index': anti_idx, 'target_diff': target_diff,
-        'budget': budget, 'target_course': target_course,
+        'budget': budget, 'target_course': target_course, 'target_par': target_par,
         'last_20_avg': last_20_avg, 'year_avg': year_avg,
         'series': series, 'yearly_avgs': yearly_avgs, 'ghin_series': ghin_series,
         'n_posted': len(posted), 'n_last_20': n,
@@ -209,7 +209,7 @@ MANIFEST_JSON = json.dumps({
 # Service Worker
 # ---------------------------------------------------------------------------
 SW_JS = """
-const CACHE = 'golf-log-v19';
+const CACHE = 'golf-log-v20';
 const CORE = ['/icon.png', '/manifest.json'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)));
@@ -461,7 +461,10 @@ input[type=text],input[type=number]{width:100%;padding:11px;background:#1e2a3a;b
     <div class="stat-card"><div class="sc-val" id="hcp-yravg">—</div><div class="sc-lbl">Year Avg</div></div>
   </div>
   <div id="hcp-budget-info" class="card" style="display:none">
-    <div style="font-size:13px;color:var(--muted)" id="hcp-budget-txt"></div>
+    <h3 style="margin-bottom:10px">To Lower Your Index</h3>
+    <div class="stat-row"><span class="stat-lbl">Beat Differential</span><span class="stat-val" id="hcp-beat-diff" style="color:var(--gold)">—</span></div>
+    <div class="stat-row"><span class="stat-lbl">Target Adj Score</span><span class="stat-val" id="hcp-target-score" style="color:var(--green);font-size:22px;font-weight:900">—</span></div>
+    <div class="stat-row" style="border:none"><span class="stat-lbl">Based on</span><span class="stat-val" id="hcp-target-course" style="font-size:12px;color:var(--muted);text-align:right;max-width:180px">—</span></div>
   </div>
   <div class="card">
     <h3>Differential Per Round</h3>
@@ -1043,7 +1046,7 @@ function adjHoleScore(gross, par, holeHdcp, courseHdcp) {
 
 function updateBudget() {
   const wrap = document.getElementById('budget-bar-wrap');
-  if (!R.budget || R.nine_hole) { wrap.style.display='none'; return; }
+  if (!R.budget) { wrap.style.display='none'; return; }
   wrap.style.display='block';
   let used=0;
   R.results.forEach(r => used += r.adj - r.par);
@@ -1589,10 +1592,12 @@ function renderHandicap(data) {
   document.getElementById('hcp-yravg').textContent  = fmt(data.year_avg);
 
   const bi = document.getElementById('hcp-budget-info');
-  const bt = document.getElementById('hcp-budget-txt');
   if (data.target_diff !== null && data.budget !== null) {
     bi.style.display='block';
-    bt.innerHTML=`Beat <b>${data.target_diff}</b> to lower your index · Budget: <b>${data.budget}</b> strokes over par at ${data.target_course||'last course'}`;
+    const targetAdj = (data.budget||0) + (data.target_par||72);
+    document.getElementById('hcp-beat-diff').textContent = data.target_diff;
+    document.getElementById('hcp-target-score').textContent = targetAdj;
+    document.getElementById('hcp-target-course').textContent = data.target_course||'last 18-hole course';
   } else { bi.style.display='none'; }
 
   const series = data.series||[];
