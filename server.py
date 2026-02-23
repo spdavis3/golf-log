@@ -216,7 +216,7 @@ MANIFEST_JSON = json.dumps({
 # Service Worker
 # ---------------------------------------------------------------------------
 SW_JS = """
-const CACHE = 'golf-log-v22';
+const CACHE = 'golf-log-v23';
 const CORE = ['/icon.png', '/manifest.json'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)));
@@ -1012,9 +1012,13 @@ function showHole(idx) {
   document.getElementById('edit-btn').style.display = idx>0 ? 'block' : 'none';
 
   // Show handicap par target for 18-hole rounds with hole handicap data
+  // Uses remaining holes + remaining budget so targets adjust after each hole
   const hpEl = document.getElementById('hole-hcp-par');
   if (!R.nine_hole && R.budget != null && hole.handicap) {
-    const hpMap = computeHcpPar(R.holes, R.budget);
+    const usedOverPar = R.results.reduce((s,r) => s + (r.adj - r.par), 0);
+    const remainingBudget = R.budget - usedOverPar;
+    const remainingHoles = R.holes.slice(idx);
+    const hpMap = computeHcpPar(remainingHoles, remainingBudget);
     const tgt = hpMap[hole.number];
     if (tgt != null) {
       const diff = tgt - hole.par;
